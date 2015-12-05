@@ -1,6 +1,8 @@
 class ntp::params {
 
   $autoupdate        = false
+  $config_dir        = undef
+  $config_file_mode  = '0644'
   $config_template   = 'ntp/ntp.conf.erb'
   $keys_enable       = false
   $keys_controlkey   = ''
@@ -28,6 +30,7 @@ class ntp::params {
   $tos_floor         = '1'
   $tos_ceiling       = '15'
   $tos_cohort        = '0'
+  $disable_dhclient  = false
 
   # Allow a list of fudge options
   $fudge             = []
@@ -137,31 +140,48 @@ class ntp::params {
       }
     }
     'Suse': {
-      if $::operatingsystem == 'SLES' {
-        case $::operatingsystemmajrelease {
-          '10': {
-            $service_name  = 'ntp'
-            $keys_file     = '/etc/ntp.keys'
-            $package_name  = [ 'xntp' ]
-          }
-          '11': {
-            $service_name  = 'ntp'
-            $keys_file     = $default_keys_file
-            $package_name  = $default_package_name
-          }
-          '12': {
-            $service_name  = 'ntpd'
-            $keys_file     = '/etc/ntp.keys'
-            $package_name  = $default_package_name
-          }
-          default: {
-            fail("The ${module_name} module is not supported on an ${::operatingsystem} ${::operatingsystemmajrelease} distribution.")
+      case $::operatingsystem {
+        'SLES': {
+          case $::operatingsystemmajrelease {
+            '10': {
+              $service_name  = 'ntp'
+              $keys_file     = '/etc/ntp.keys'
+              $package_name  = [ 'xntp' ]
+            }
+            '11': {
+              $service_name  = 'ntp'
+              $keys_file     = $default_keys_file
+              $package_name  = $default_package_name
+            }
+            '12': {
+              $service_name  = 'ntpd'
+              $keys_file     = '/etc/ntp.keys'
+              $package_name  = $default_package_name
+            }
+            default: {
+              fail("The ${module_name} module is not supported on an ${::operatingsystem} ${::operatingsystemmajrelease} distribution.")
+            }
           }
         }
-      } else {
-        $service_name  = 'ntp'
-        $keys_file     = $default_keys_file
-        $package_name  = $default_package_name
+        'OpenSuSE': {
+          case $::operatingsystemrelease {
+            '13.2': {
+              $service_name  = 'ntpd'
+              $keys_file     = '/etc/ntp.keys'
+              $package_name  = $default_package_name
+            }
+            default: {
+              $service_name  = 'ntp'
+              $keys_file     = $default_keys_file
+              $package_name  = $default_package_name
+            }
+          }
+        }
+        default: {
+          $service_name  = 'ntp'
+          $keys_file     = $default_keys_file
+          $package_name  = $default_package_name
+        }
       }
       $config          = $default_config
       $driftfile       = '/var/lib/ntp/drift/ntp.drift'
@@ -303,6 +323,27 @@ class ntp::params {
             '1.gentoo.pool.ntp.org',
             '2.gentoo.pool.ntp.org',
             '3.gentoo.pool.ntp.org',
+          ]
+          $maxpoll         = undef
+          $disable_monitor = false
+        }
+        'Amazon': {
+          $config          = $default_config
+          $keys_file       = $default_keys_file
+          $driftfile       = $default_driftfile
+          $package_name    = $default_package_name
+          $service_name    = $default_service_name
+          $restrict        = [
+            'default kod nomodify notrap nopeer noquery',
+            '-6 default kod nomodify notrap nopeer noquery',
+            '127.0.0.1',
+            '-6 ::1',
+          ]
+          $iburst_enable   = false
+          $servers         = [
+            '0.centos.pool.ntp.org',
+            '1.centos.pool.ntp.org',
+            '2.centos.pool.ntp.org',
           ]
           $maxpoll         = undef
           $disable_monitor = false

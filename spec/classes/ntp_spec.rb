@@ -49,9 +49,6 @@ describe 'ntp' do
               :keys_requestkey => '3',
             }}
 
-            it { should contain_file('/etc/ntp').with({
-              'ensure'  => 'directory'})
-            }
             it { should contain_file('/etc/ntp.conf').with({
               'content' => /trustedkey 1 2 3/})
             }
@@ -73,9 +70,6 @@ describe 'ntp' do
             :keys_requestkey => '3',
           }}
 
-          it { should_not contain_file('/etc/ntp').with({
-            'ensure'  => 'directory'})
-          }
           it { should_not contain_file('/etc/ntp.conf').with({
             'content' => /trustedkey 1 2 3/})
           }
@@ -155,6 +149,32 @@ describe 'ntp' do
             end
           end
         end
+        describe 'with parameter disable_dhclient' do
+          context 'when set to true' do
+            let(:params) {{
+              :disable_dhclient => true,
+            }}
+
+            it 'should contain disable ntp-servers setting' do
+              should contain_augeas('disable ntp-servers in dhclient.conf')
+            end
+            it 'should contain dhcp file' do
+              should contain_file('/var/lib/ntp/ntp.conf.dhcp').with_ensure('absent')
+            end
+          end
+          context 'when set to false' do
+            let(:params) {{
+              :disable_dhclient => false,
+            }}
+
+            it 'should not contain disable ntp-servers setting' do
+              should_not contain_augeas('disable ntp-servers in dhclient.conf')
+            end
+            it 'should not contain dhcp file' do
+              should_not contain_file('/var/lib/ntp/ntp.conf.dhcp').with_ensure('absent')
+            end
+          end
+        end
         describe 'with parameter disable_kernel' do
           context 'when set to true' do
             let(:params) {{
@@ -200,6 +220,32 @@ describe 'ntp' do
               should_not contain_file('/etc/ntp.conf').with({
               'content' => /^broadcastclient\n/,
               })
+            end
+          end
+          context 'when setting custom config_dir' do
+            let(:params) {{
+              :keys_enable => true,
+              :config_dir  => '/tmp/foo',
+              :keys_file   => '/tmp/foo/ntp.keys',
+            }}
+
+            it 'should contain custom config directory' do
+              should contain_file('/tmp/foo').with(
+                'ensure'  => 'directory',
+                'owner'   => '0',
+                'group'   => '0',
+                'mode'    => '0664',
+                'recurse' => 'false'
+              )
+            end
+          end
+          context 'when manually setting conf file mode to 0777' do
+            let(:params) {{
+              :config_file_mode => '0777',
+            }}
+
+            it 'should contain file mode of 0777' do
+              should contain_file('/etc/ntp.conf').with_mode('0777')
             end
           end
         end

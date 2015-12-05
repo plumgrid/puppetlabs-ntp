@@ -2,8 +2,11 @@ class ntp (
   $autoupdate        = $ntp::params::autoupdate,
   $broadcastclient   = $ntp::params::broadcastclient,
   $config            = $ntp::params::config,
+  $config_dir        = $ntp::params::config_dir,
+  $config_file_mode  = $ntp::params::config_file_mode,
   $config_template   = $ntp::params::config_template,
   $disable_auth      = $ntp::params::disable_auth,
+  $disable_dhclient  = $ntp::params::disable_dhclient,
   $disable_kernel    = $ntp::params::disable_kernel,
   $disable_monitor   = $ntp::params::disable_monitor,
   $fudge             = $ntp::params::fudge,
@@ -47,6 +50,7 @@ class ntp (
   validate_absolute_path($config)
   validate_string($config_template)
   validate_bool($disable_auth)
+  validate_bool($disable_dhclient)
   validate_bool($disable_kernel)
   validate_bool($disable_monitor)
   validate_absolute_path($driftfile)
@@ -82,6 +86,10 @@ class ntp (
   if $tos_cohort { validate_re($tos_cohort, '^[0|1]$', "Must be 0 or 1, got: ${tos_cohort}") }
   validate_bool($udlc)
   validate_array($peers)
+
+  if $config_dir {
+    validate_absolute_path($config_dir)
+  }
 
   if $autoupdate {
     notice('autoupdate parameter has been deprecated and replaced with package_ensure.  Set this to latest for the same behavior as autoupdate => true.')

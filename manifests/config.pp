@@ -1,13 +1,25 @@
-#
+# Private Class
 class ntp::config inherits ntp {
 
   if $ntp::keys_enable {
-    $directory = ntp_dirname($ntp::keys_file)
-    file { $directory:
-      ensure => directory,
+    case $ntp::config_dir {
+      '/', '/etc', undef: {}
+      default: {
+        file { $ntp::config_dir:
+          ensure  => directory,
+          owner   => 0,
+          group   => 0,
+          mode    => '0664',
+          recurse => false,
+        }
+      }
+    }
+
+    file { $ntp::keys_file:
+      ensure => file,
       owner  => 0,
       group  => 0,
-      mode   => '0755',
+      mode   => '0664',
     }
   }
 
@@ -15,7 +27,7 @@ class ntp::config inherits ntp {
     ensure  => file,
     owner   => 0,
     group   => 0,
-    mode    => '0644',
+    mode    => $::ntp::config_file_mode,
     content => template($ntp::config_template),
   }
 
@@ -28,4 +40,14 @@ class ntp::config inherits ntp {
     }
   }
 
+  if $ntp::disable_dhclient {
+    augeas { 'disable ntp-servers in dhclient.conf':
+      context => '/files/etc/dhcp/dhclient.conf',
+      changes => 'rm request/*[.="ntp-servers"]',
+    }
+
+    file { '/var/lib/ntp/ntp.conf.dhcp':
+      ensure => absent,
+    }
+  }
 }
